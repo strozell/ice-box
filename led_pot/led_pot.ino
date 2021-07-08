@@ -8,12 +8,15 @@ Adafruit_MLX90614 mlx = Adafruit_MLX90614();
 int potentiometerPin = A1; // pot
 int potValue = 0;
 int tempF = 0;
-int brightness = 255;
+int maxBrightness = 255;
 int threshold;
-int rLedPin = 2; //pwm
+int rLedPin = 5; //pwm
 int gLedPin = 3; //pwm
-int bLedPin = 4; //pwm
+int bLedPin = 6; //pwm
 int selectedLedPin;
+int delta;
+int redBrightness;
+int blueBrightness;
 
 void setup() {
   // put your setup code here, to run once:
@@ -28,7 +31,7 @@ void setup() {
 void loop() {
   // get new Potentiometer threshold
   potValue = analogRead(potentiometerPin);
-  threshold = potValue/10 + 50; // want 50 to 150 F from 0-1023
+  threshold = potValue/10 + 30; // want 30 to 130 F from 0-1023 (80+/-50
   Serial.print("Threshold = "); Serial.println(threshold);
 
   // get new object and ambient temperature
@@ -37,14 +40,23 @@ void loop() {
   //Serial.print("Ambient = "); Serial.print(mlx.readAmbientTempF()); Serial.println("*F"); 
   Serial.print("tempF = "); Serial.println(tempF);
 
-  // red/blue thresholding
-  selectedLedPin = tempF < threshold ? bLedPin : rLedPin;
-  Serial.print("selectedLedPin = "); Serial.println(selectedLedPin);
-  analogWrite(selectedLedPin, brightness);
+  // red/blue scale from threshold
+  delta = tempF - threshold; //temp - (30-130). If positive, skew red. If zero, purple. If negative, skew blue.
+  Serial.print("delta = "); Serial.println(delta);
+  if (delta > 0) {
+    redBrightness = maxBrightness;
+    blueBrightness = maxBrightness-(delta*4)-15;
+  } else {
+    blueBrightness = maxBrightness;
+    redBrightness = maxBrightness+(delta*4)-15;
+  }
+  Serial.print("redBrightness = "); Serial.println(redBrightness);
+  Serial.print("blueBrightness = "); Serial.println(blueBrightness);
+  
+  analogWrite(rLedPin, redBrightness);
+  analogWrite(bLedPin, blueBrightness);
   
   delay(500);
-  analogWrite(rLedPin, 0);
-  analogWrite(gLedPin, 0);
-  analogWrite(bLedPin, 0);
+
   
 }
