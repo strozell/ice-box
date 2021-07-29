@@ -2,7 +2,7 @@
 
 #include <Wire.h>
 #include <Adafruit_MLX90614.h>
-#include "led_pot.h"
+#include "ice_box.h"
 
 Adafruit_MLX90614 mlx = Adafruit_MLX90614();
 #define MLX_I2C_ADDR 0x5A

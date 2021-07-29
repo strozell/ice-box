@@ -1,5 +1,5 @@
-#ifndef LED_POT_H
-#define LED_POT_H
+#ifndef ICE_BOX_H
+#define ICE_BOX_H
 
 // BOARD MODULE
 int Pin_potentiometer = A1; // pot
@@ -37,4 +37,4 @@ void led_set_rgb(int r_val, int g_val, int b_val);
 int tempF = 0;
 
 
-#endif //LED_POT_H
+#endif //ICE_BOX_H
