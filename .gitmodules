@@ -1,0 +1,6 @@
+[submodule "src/lib/Adafruit-MLX90614-Library"]
+	path = src/lib/Adafruit-MLX90614-Library
+	url = https://github.com/adafruit/Adafruit-MLX90614-Library.git
+[submodule "src/lib/Adafruit_BusIO"]
+	path = src/lib/Adafruit_BusIO
+	url = https://github.com/adafruit/Adafruit_BusIO.git
