@@ -11,7 +11,7 @@ Adafruit_MLX90614 mlx = Adafruit_MLX90614();
 #define MLX_I2C_ADDR 0x5A
 
 void setup() {
-  pinMode(Pin_potentiometer, INPUT);
+  pinMode(PIN_P2, INPUT);
   pinMode(Pin_limit_switch, INPUT);
   pinMode(Pin_led_r, OUTPUT);
   pinMode(Pin_led_g, OUTPUT);
@@ -23,7 +23,8 @@ void setup() {
 void loop() {
   while (get_limit_switch_state() == LIMIT_SWITCH_CLOSED) {
 
-    threshold = get_potentiometer_threshold();
+//    threshold = get_potentiometer_threshold();
+    brightness = get_potentiometer_value( POT_SEL_P2 );
 
     // get new object and ambient temperature
     tempF = mlx.readObjectTempF();
@@ -32,19 +33,19 @@ void loop() {
     Serial.print("tempF = "); Serial.println(tempF);
 
     // red/blue scale from threshold
-    delta = tempF - threshold; //temp - (30-130). If positive, skew red. If zero, purple. If negative, skew blue.
-    Serial.print("delta = "); Serial.println(delta);
-    if (delta > 0) {
-      redBrightness = maxBrightness;
-      blueBrightness = maxBrightness - (delta * 4) - 15;
-    } else {
-      blueBrightness = maxBrightness;
-      redBrightness = maxBrightness + (delta * 4) - 15;
-    }
-    Serial.print("redBrightness = "); Serial.println(redBrightness);
-    Serial.print("blueBrightness = "); Serial.println(blueBrightness);
-
-    led_set_rgb(redBrightness, 0, blueBrightness);
+//    delta = tempF - threshold; //temp - (30-130). If positive, skew red. If zero, purple. If negative, skew blue.
+//    Serial.print("delta = "); Serial.println(delta);
+//    if (delta > 0) {
+//      redBrightness = maxBrightness;
+//      blueBrightness = maxBrightness - (delta * 4) - 15;
+//    } else {
+//      blueBrightness = maxBrightness;
+//      redBrightness = maxBrightness + (delta * 4) - 15;
+//    }
+//    Serial.print("redBrightness = "); Serial.println(redBrightness);
+//    Serial.print("blueBrightness = "); Serial.println(blueBrightness);
+//
+//    led_set_rgb(redBrightness, 0, blueBrightness);
 
     delay(50);
   }
@@ -55,18 +56,13 @@ void loop() {
 
 limit_switch_state_t get_limit_switch_state() {
   return digitalRead(Pin_limit_switch) == LOW ? LIMIT_SWITCH_CLOSED : LIMIT_SWITCH_OPEN;
-//  if ( digitalRead(Pin_limit_switch) == LOW ) {
-//    return LIMIT_SWITCH_CLOSED;
-//  } else {
-//    return LIMIT_SWITCH_OPEN;
-//  }
 }
 
-int get_potentiometer_threshold() {
-  int potValue = analogRead(Pin_potentiometer);
-  int tempThreshold = potValue / 10 + 30; // want 30 to 130 F from 0-1023 (80+/-50
-  Serial.print("Threshold = "); Serial.println(threshold);
-  return tempThreshold;
+int get_potentiometer_value(pot_pin_t pot) {
+  int potValue = analogRead(pot);
+  int tempBrightness = potValue / 10; // want 0 to 100 % from 0-1023 //TODO 0-max brightness by log scale instead of linear
+  Serial.print("Brightness = "); Serial.println(tempBrightness);
+  return tempBrightness;
 }
 
 void led_set_all_off() {

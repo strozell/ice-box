@@ -2,7 +2,7 @@
 #define ICE_BOX_H
 
 // BOARD MODULE
-int Pin_potentiometer = A1; // pot
+#define PIN_P2  A1
 int Pin_led_r = 5; //pwm
 int Pin_led_g = 3; //pwm
 int Pin_led_b = 6; //pwm
@@ -19,8 +19,13 @@ limit_switch_state_t get_limit_switch_state();
 
 
 // POTENTIOMETER MODULE
-int threshold;
-int get_potentiometer_threshold();
+typedef enum _pot_pin {
+  POT_SEL_P1=0,
+  POT_SEL_P2=PIN_P2,
+  POT_SEL_P3=0
+} pot_pin_t;
+int brightness;
+int get_potentiometer_value(pot_pin_t pot);
 
 
 // LED MODULE
