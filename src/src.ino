@@ -1,7 +1,10 @@
-// Version 1.0
+// Version 0.0.1
+// Sam Rozell
+// 23 July 2022
 
 #include <Wire.h>
-#include <Adafruit_MLX90614.h>
+#include <Adafruit_MLX90614.h> //arduino library
+//#include "lib/Adafruit-MLX90614-Library/Adafruit_MLX90614.h" //submodule version
 #include "ice_box.h"
 
 Adafruit_MLX90614 mlx = Adafruit_MLX90614();
@@ -51,11 +54,12 @@ void loop() {
 
 
 limit_switch_state_t get_limit_switch_state() {
-  if ( digitalRead(Pin_limit_switch) == LOW ) {
-    return LIMIT_SWITCH_CLOSED;
-  } else {
-    return LIMIT_SWITCH_OPEN;
-  }
+  return digitalRead(Pin_limit_switch) == LOW ? LIMIT_SWITCH_CLOSED : LIMIT_SWITCH_OPEN;
+//  if ( digitalRead(Pin_limit_switch) == LOW ) {
+//    return LIMIT_SWITCH_CLOSED;
+//  } else {
+//    return LIMIT_SWITCH_OPEN;
+//  }
 }
 
 int get_potentiometer_threshold() {
