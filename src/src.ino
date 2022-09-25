@@ -1,80 +1,81 @@
-// Version 0.0.1
+// Version 0.0.2 - Fan PWM Cycle plus Tach
 // Sam Rozell
 // 23 July 2022
 
-#include <Wire.h>
-#include <Adafruit_MLX90614.h> //arduino library
-//#include "lib/Adafruit-MLX90614-Library/Adafruit_MLX90614.h" //submodule version
 #include "ice_box.h"
 
-Adafruit_MLX90614 mlx = Adafruit_MLX90614();
-#define MLX_I2C_ADDR 0x5A
+// Configure Timer 2 (pin 3) to output 25kHz PWM. 
+// Pin 11 will be unavailable for output in this mode
+void setupTimer2( void ){
+    //Set PWM frequency to about 25khz on pin 3 (timer 2 mode 5, prescale 8, count to 79)
+    TIMSK2 = 0;
+    TIFR2 = 0;
+    TCCR2A = (1 << COM2B1) | (1 << WGM21) | (1 << WGM20);
+    TCCR2B = (1 << WGM22) | (1 << CS21);
+    OCR2A = 79;
+    OCR2B = 0;
+}
+
+// equivalent of analogWrite on pin 3
+void setPWM2( float f ){
+    // limit input from FAN_PWM_DC_MIN to 1
+    f= (f<FAN_PWM_DC_MIN) ? FAN_PWM_DC_MIN : (f>1 ? 1 : f); 
+    OCR2B = (uint8_t)(79*f);
+}
+
+
+//Interrupt handler. Stores the timestamps of the last 2 interrupts and handles debouncing
+unsigned long volatile ts1=0,ts2=0;
+void tachISR() {
+    unsigned long m=millis();
+    if((m-ts2)>FAN_TACH_DEBOUNCE){
+        ts1=ts2;
+        ts2=m;
+    }
+}
+//Calculates the RPM based on the timestamps of the last 2 interrupts. Can be called at any time.
+unsigned long calcRPM(){
+    if(millis()-ts2<FAN_TACH_STUCK_THRESHOLD&&ts2!=0){
+        return (60000/(ts2-ts1))/2;
+    }else return 0;
+}
+
 
 void setup() {
-  pinMode(Pin_potentiometer, INPUT);
-  pinMode(Pin_limit_switch, INPUT);
-  pinMode(Pin_led_r, OUTPUT);
-  pinMode(Pin_led_g, OUTPUT);
-  pinMode(Pin_led_b, OUTPUT);
-  Serial.begin(9600);
-  mlx.begin();
+  // enable fan power through relay
+  pinMode(PIN_FAN_POWER, OUTPUT);
+  digitalWrite(PIN_FAN_POWER, HIGH);
+
+  // setp fan PWM timer
+  pinMode(PIN_FAN_PWM, OUTPUT);
+  setupTimer2();
+  setPWM2(0.4f);
+
+  // setup fan tachometry
+  pinMode(PIN_FAN_TACH, INPUT_PULLUP);
+  //set tachISR to be triggered when the signal on the sense pin goes low
+  attachInterrupt(digitalPinToInterrupt(PIN_FAN_TACH), tachISR, FALLING); 
+  Serial.begin(9600); //enable serial so we can see the RPM in the serial monitor
 }
 
 void loop() {
-  while (get_limit_switch_state() == LIMIT_SWITCH_CLOSED) {
 
-    threshold = get_potentiometer_threshold();
-
-    // get new object and ambient temperature
-    tempF = mlx.readObjectTempF();
-    //Serial.print("Object = "); Serial.print(mlx.readObjectTempF()); Serial.println("*F");
-    //Serial.print("Ambient = "); Serial.print(mlx.readAmbientTempF()); Serial.println("*F");
-    Serial.print("tempF = "); Serial.println(tempF);
-
-    // red/blue scale from threshold
-    delta = tempF - threshold; //temp - (30-130). If positive, skew red. If zero, purple. If negative, skew blue.
-    Serial.print("delta = "); Serial.println(delta);
-    if (delta > 0) {
-      redBrightness = maxBrightness;
-      blueBrightness = maxBrightness - (delta * 4) - 15;
-    } else {
-      blueBrightness = maxBrightness;
-      redBrightness = maxBrightness + (delta * 4) - 15;
-    }
-    Serial.print("redBrightness = "); Serial.println(redBrightness);
-    Serial.print("blueBrightness = "); Serial.println(blueBrightness);
-
-    led_set_rgb(redBrightness, 0, blueBrightness);
-
-    delay(50);
+  setPWM2(0.4f);
+  for (int i=0; i<10; i++) {
+    delay(100);
+    Serial.print("RPM:");
+    Serial.println(calcRPM());
   }
-
-  led_set_all_off();
-}
-
-
-limit_switch_state_t get_limit_switch_state() {
-  return digitalRead(Pin_limit_switch) == LOW ? LIMIT_SWITCH_CLOSED : LIMIT_SWITCH_OPEN;
-//  if ( digitalRead(Pin_limit_switch) == LOW ) {
-//    return LIMIT_SWITCH_CLOSED;
-//  } else {
-//    return LIMIT_SWITCH_OPEN;
-//  }
-}
-
-int get_potentiometer_threshold() {
-  int potValue = analogRead(Pin_potentiometer);
-  int tempThreshold = potValue / 10 + 30; // want 30 to 130 F from 0-1023 (80+/-50
-  Serial.print("Threshold = "); Serial.println(threshold);
-  return tempThreshold;
-}
-
-void led_set_all_off() {
-  led_set_rgb(0,0,0);
-}
-
-void led_set_rgb(int r_val, int g_val, int b_val) {
-  analogWrite(Pin_led_r, r_val);
-  analogWrite(Pin_led_g, g_val);
-  analogWrite(Pin_led_b, b_val);
+  setPWM2(0.6f);
+  for (int i=0; i<10; i++) {
+    delay(100);
+    Serial.print("RPM:");
+    Serial.println(calcRPM());
+  }
+  setPWM2(0.8f);
+  for (int i=0; i<10; i++) {
+    delay(100);
+    Serial.print("RPM:");
+    Serial.println(calcRPM());
+  }
 }
