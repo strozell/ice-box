@@ -17,4 +17,7 @@
 #define FAN_PWM_DC_ON_MIN (20U)
 #define FAN_PWM_DC_ON_MAX (100U)
 
+// TEMPERATURE MODULE
+#define TEMP_DC_OFF_F (77)
+#define TEMP_DC_ON_MAX_F (89)
 #endif //ICE_BOX_H

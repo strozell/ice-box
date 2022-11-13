@@ -20,18 +20,19 @@ void setup() {
 void loop() {
 
   // Capture new input
-  unsigned int new_duty_cycle = PotCalculateDutyCycle();
+//  unsigned int new_duty_cycle = PotCalculateDutyCycle(); // Pot control
+  unsigned int new_duty_cycle = TempCalculateDutyCyclePercent(); // Temp control
   bool laptop_contact = SwitchIsClosed();
   int fan_power_enable = laptop_contact; // If laptop is removed, turn off fan power
 
   // Apply new input
-  digitalWrite(PIN_FAN_POWER, fan_power_enable);
+  digitalWrite(PIN_FAN_POWER, HIGH);
   FanPwmSetDutyCyclePercent(new_duty_cycle);
 
   // Loop
   TempSerialPrint();
   FanTachSerialPrint();
-  delay(100);
+  delay(500);
 }
 
 /*
@@ -42,10 +43,15 @@ void loop() {
 */
 unsigned int PotCalculateDutyCycle() {
   int pot_value = analogRead(PIN_POT_FRONT);
-  Serial.println(pot_value);
 
   // scale to duty cycle percent
   long int duty_cycle_percent = round(pot_value * 100L / 1023L); // want 0-100 from 0-1023
+
+  Serial.print("Pot: ");
+  Serial.println(pot_value);
+  Serial.print("Pot DC: ");
+  Serial.print(duty_cycle_percent);
+  Serial.println(" %");
 
   return duty_cycle_percent;
 }
@@ -55,15 +61,43 @@ bool SwitchIsClosed() {
 }
 
 void TempSerialPrint() {
- Serial.print(mlx.readObjectTempC());
- Serial.println(" C");
- Serial.print(mlx.readObjectTempF());
+ Serial.print("T: ");
+ Serial.print(TempGetObjectC());
+ Serial.print(" C, ");;
+ Serial.print(TempGetObjectF());
  Serial.println(" F");
 }
 
+int TempGetObjectF() {
+  return mlx.readObjectTempF();
+}
+
+int TempGetObjectC() {
+  return mlx.readObjectTempC();
+}
+
+int TempCalculateDutyCyclePercent() {
+
+  int new_temp = TempGetObjectF();
+  if (new_temp < TEMP_DC_OFF_F) {
+    return FAN_PWM_DC_OFF;
+  } 
+
+  if (new_temp > TEMP_DC_ON_MAX_F) {
+    return FAN_PWM_DC_ON_MAX;
+  }
+
+  // scale to duty cycle
+  int duty_cycle = (new_temp - TEMP_DC_OFF_F) * 10; // remove offset, 1F=10%
+
+  // return duty cycle limited from 0-100
+  return (duty_cycle < 0 ? 0 : (duty_cycle > 100 ? 100 : duty_cycle));
+}
+
 void FanTachSerialPrint() {
-  Serial.print("RPM:");
-  Serial.println(FanTachCalculateRPM());
+  Serial.print("Fan:");
+  Serial.print(FanTachCalculateRPM());
+  Serial.println(" RPM");
 }
 
 
@@ -107,6 +141,8 @@ void FanPwmSetDutyCyclePercent( unsigned int percent ){
 
   // scale to FAN_PWM_OCR2A_TOP setting
   uint8_t ocr2b = FAN_PWM_OCR2A_TOP * percent * 0.01f;
+  Serial.print("OCR2B: ");
+  Serial.println(ocr2b);
 
   OCR2B = ocr2b;
 }
